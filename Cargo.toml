@@ -12,3 +12,4 @@ name = "main"
 path = "src/main.rs"
 
 [dependencies]
+ordered-float = "0.5.0"
