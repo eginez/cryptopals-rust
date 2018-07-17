@@ -5,6 +5,10 @@ use std::cmp::Ordering;
 use std::collections::BinaryHeap;
 use std::collections::HashMap;
 use std::i64;
+use std::io;
+use std::io::prelude::*;
+use std::fs::File;
+use std::io::BufReader;
 use std::str;
 use ordered_float::OrderedFloat;
 
@@ -143,6 +147,31 @@ pub fn break_single_xor(cipher: &[u8]) -> std::collections::BinaryHeap<WeightedD
     return b;
 }
 
+pub fn detect_single_xor_cipher(ciphers: Vec<Vec<u8>>) -> (Vec<u8>, f64) {
+    let mut b = BinaryHeap::new();
+    for (i, c) in ciphers.iter().enumerate() {
+        let decoded = decode_hex(c);
+        let score = break_single_xor(&decoded);
+        let score = score.peek().unwrap();
+        let n = WeightedData{weight: score.weight, data: (i, score.data)};
+        b.push(n);
+    }
+
+    let best = b.peek().unwrap();
+    let decoded = single_xor(&decode_hex(&ciphers[best.data.0]), best.data.1);
+    return (decoded, best.weight.into());
+}
+
+fn read_file_as_lines(file_path: String) -> io::Result<Vec<Vec<u8>>> {
+    let f = File::open(file_path)?;
+    let reader = BufReader::new(f);
+    let mut vec: Vec<Vec<u8>> = Vec::new();
+    for l in reader.lines() {
+        vec.push(l?.into_bytes());
+    }
+    return Ok(vec);
+}
+
 #[cfg(test)]
 mod test {
     use coll_xor;
@@ -150,6 +179,8 @@ mod test {
     use decode_hex;
     use encode_hex;
     use break_single_xor;
+    use read_file_as_lines;
+    use detect_single_xor_cipher;
 
     macro_rules! string_vec {
         ($inp:expr) => {
@@ -197,13 +228,21 @@ mod test {
     }
 
     #[test]
-    fn test_score_buffer() {
+    fn test_break_single_cipher() {
         let decoded = decode_hex(b"1b37373331363f78151b7f2b783431333d78397828372d363c78373e783a393b3736");
         let possible_keys = break_single_xor(&decoded);
         let key = possible_keys.peek().unwrap().data;
         let res = single_xor(&decoded, key);
         assert_eq!(string_vec!("Cooking MC's like a pound of bacon"), res);
     }
+
+    #[test]
+    fn test_detect_single_cipher() {
+        let input = read_file_as_lines(String::from("data4.txt"));
+        let res = detect_single_xor_cipher(input.unwrap());
+        assert_eq!(string_vec!("Now that the party is jumping\n"), res.0);
+    }
+
 
     //test_multi_arity! {
     //score_buffer_as_text,
