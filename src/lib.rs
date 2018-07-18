@@ -162,6 +162,16 @@ pub fn detect_single_xor_cipher(ciphers: Vec<Vec<u8>>) -> (Vec<u8>, f64) {
     return (decoded, best.weight.into());
 }
 
+pub fn repeating_key_xor(cipher: &[u8], key: &[u8]) -> Vec<u8> {
+    let mut res: Vec<u8> = Vec::new();
+    let key_len = key.len();
+    for (i,c) in cipher.iter().enumerate() {
+        let j = i % key_len;
+        res.push(c ^ key[j]);
+    }
+    return res;
+}
+
 fn read_file_as_lines(file_path: String) -> io::Result<Vec<Vec<u8>>> {
     let f = File::open(file_path)?;
     let reader = BufReader::new(f);
@@ -179,8 +189,9 @@ mod test {
     use decode_hex;
     use encode_hex;
     use break_single_xor;
-    use read_file_as_lines;
-    use detect_single_xor_cipher;
+ //   use read_file_as_lines;
+  //  use detect_single_xor_cipher;
+    use repeating_key_xor;
 
     macro_rules! string_vec {
         ($inp:expr) => {
@@ -236,11 +247,20 @@ mod test {
         assert_eq!(string_vec!("Cooking MC's like a pound of bacon"), res);
     }
 
-    #[test]
-    fn test_detect_single_cipher() {
-        let input = read_file_as_lines(String::from("data4.txt"));
-        let res = detect_single_xor_cipher(input.unwrap());
-        assert_eq!(string_vec!("Now that the party is jumping\n"), res.0);
+    // #[test]
+    // fn test_detect_single_cipher() {
+    //     let input = read_file_as_lines(String::from("data4.txt"));
+    //     let res = detect_single_xor_cipher(input.unwrap());
+    //     assert_eq!(string_vec!("Now that the party is jumping\n"), res.0);
+    // }
+
+    test_multi_arity!{
+        repeating_xor_simple,
+        repeating_key_xor,
+        expected: decode_hex(b"0b3637272a2b2e63622c2e69692a23693a2a3c6324202d623d63343c2a26226324272765272a282b2f20430a652e2c652a3124333a653e2b2027630c692b20283165286326302e27282f"),
+        b"Burning 'em, if you ain't quick and nimble
+I go crazy when I hear a cymbal",
+        b"ICE"
     }
 
 
