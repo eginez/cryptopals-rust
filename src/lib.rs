@@ -1,16 +1,16 @@
 extern crate ordered_float;
 
+use ordered_float::OrderedFloat;
 use std::char;
 use std::cmp::Ordering;
 use std::collections::BinaryHeap;
 use std::collections::HashMap;
+use std::fs::File;
 use std::i64;
 use std::io;
 use std::io::prelude::*;
-use std::fs::File;
 use std::io::BufReader;
 use std::str;
-use ordered_float::OrderedFloat;
 
 fn english_letter_freq() -> HashMap<char, f64> {
     let map: HashMap<char, f64> = [
@@ -87,12 +87,18 @@ pub struct WeightedData<T> {
     data: T,
 }
 
-impl<T> Ord for WeightedData<T> where T: std::cmp::Eq {
+impl<T> Ord for WeightedData<T>
+where
+    T: std::cmp::Eq,
+{
     fn cmp(&self, other: &WeightedData<T>) -> Ordering {
         return self.weight.cmp(&other.weight);
     }
 }
-impl<T> PartialOrd for WeightedData<T> where T: std::cmp::Eq {
+impl<T> PartialOrd for WeightedData<T>
+where
+    T: std::cmp::Eq,
+{
     fn partial_cmp(&self, other: &WeightedData<T>) -> Option<Ordering> {
         return Some(self.cmp(other));
     }
@@ -135,13 +141,15 @@ pub fn score_buffer_as_text(buff: &[u8]) -> f64 {
     return sum - (0.01 * count_non_printable_chars.len() as f64) as f64;
 }
 
-
 pub fn break_single_xor(cipher: &[u8]) -> std::collections::BinaryHeap<WeightedData<u8>> {
     let mut b = BinaryHeap::new();
-    for i in  1..255 {
+    for i in 1..255 {
         let r = single_xor(cipher, i as u8);
         let score = score_buffer_as_text(&r);
-        let n = WeightedData{weight: OrderedFloat(score), data: i as u8};
+        let n = WeightedData {
+            weight: OrderedFloat(score),
+            data: i as u8,
+        };
         b.push(n);
     }
     return b;
@@ -153,7 +161,10 @@ pub fn detect_single_xor_cipher(ciphers: Vec<Vec<u8>>) -> (Vec<u8>, f64) {
         let decoded = decode_hex(c);
         let score = break_single_xor(&decoded);
         let score = score.peek().unwrap();
-        let n = WeightedData{weight: score.weight, data: (i, score.data)};
+        let n = WeightedData {
+            weight: score.weight,
+            data: (i, score.data),
+        };
         b.push(n);
     }
 
@@ -165,7 +176,7 @@ pub fn detect_single_xor_cipher(ciphers: Vec<Vec<u8>>) -> (Vec<u8>, f64) {
 pub fn repeating_key_xor(cipher: &[u8], key: &[u8]) -> Vec<u8> {
     let mut res: Vec<u8> = Vec::new();
     let key_len = key.len();
-    for (i,c) in cipher.iter().enumerate() {
+    for (i, c) in cipher.iter().enumerate() {
         let j = i % key_len;
         res.push(c ^ key[j]);
     }
@@ -184,13 +195,13 @@ fn read_file_as_lines(file_path: String) -> io::Result<Vec<Vec<u8>>> {
 
 #[cfg(test)]
 mod test {
+    use break_single_xor;
     use coll_xor;
-    use single_xor;
     use decode_hex;
     use encode_hex;
-    use break_single_xor;
- //   use read_file_as_lines;
-  //  use detect_single_xor_cipher;
+    use single_xor;
+    //   use read_file_as_lines;
+    //  use detect_single_xor_cipher;
     use repeating_key_xor;
 
     macro_rules! string_vec {
@@ -240,7 +251,8 @@ mod test {
 
     #[test]
     fn test_break_single_cipher() {
-        let decoded = decode_hex(b"1b37373331363f78151b7f2b783431333d78397828372d363c78373e783a393b3736");
+        let decoded =
+            decode_hex(b"1b37373331363f78151b7f2b783431333d78397828372d363c78373e783a393b3736");
         let possible_keys = break_single_xor(&decoded);
         let key = possible_keys.peek().unwrap().data;
         let res = single_xor(&decoded, key);
@@ -255,14 +267,13 @@ mod test {
     // }
 
     test_multi_arity!{
-        repeating_xor_simple,
-        repeating_key_xor,
-        expected: decode_hex(b"0b3637272a2b2e63622c2e69692a23693a2a3c6324202d623d63343c2a26226324272765272a282b2f20430a652e2c652a3124333a653e2b2027630c692b20283165286326302e27282f"),
+            repeating_xor_simple,
+            repeating_key_xor,
+            expected: decode_hex(b"0b3637272a2b2e63622c2e69692a23693a2a3c6324202d623d63343c2a26226324272765272a282b2f20430a652e2c652a3124333a653e2b2027630c692b20283165286326302e27282f"),
         b"Burning 'em, if you ain't quick and nimble
 I go crazy when I hear a cymbal",
-        b"ICE"
-    }
-
+            b"ICE"
+        }
 
     //test_multi_arity! {
     //score_buffer_as_text,
