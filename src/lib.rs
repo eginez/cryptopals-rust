@@ -11,6 +11,7 @@ use std::io;
 use std::io::prelude::*;
 use std::io::BufReader;
 use std::str;
+use std::u32;
 
 fn english_letter_freq() -> HashMap<char, f64> {
     let map: HashMap<char, f64> = [
@@ -183,6 +184,23 @@ pub fn repeating_key_xor(cipher: &[u8], key: &[u8]) -> Vec<u8> {
     return res;
 }
 
+pub fn hamming_distance(s1: &[u8], s2: &[u8])-> Option<u32> {
+    if s1.len() != s2.len() {
+        return None
+    }
+
+    let mut distance: u32 = 0;
+    for i in 0..s1.len() {
+        let bits:u8 = (s1[i] ^ s2[i]).into();
+        distance=distance + bits.count_ones();
+    }
+    return Some(distance);
+}
+
+pub fn break_repeating_key() {
+    
+}
+
 fn read_file_as_lines(file_path: String) -> io::Result<Vec<Vec<u8>>> {
     let f = File::open(file_path)?;
     let reader = BufReader::new(f);
@@ -203,6 +221,7 @@ mod test {
     //   use read_file_as_lines;
     //  use detect_single_xor_cipher;
     use repeating_key_xor;
+    use hamming_distance;
 
     macro_rules! string_vec {
         ($inp:expr) => {
@@ -274,6 +293,14 @@ mod test {
 I go crazy when I hear a cymbal",
             b"ICE"
         }
+
+    test_multi_arity! {
+        hamming_distance_simple,
+        hamming_distance,
+        expected: Some(37),
+        b"this is a test ",
+        b"wokka wokka!!! "
+    }
 
     //test_multi_arity! {
     //score_buffer_as_text,
